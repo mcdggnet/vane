@@ -29,7 +29,6 @@ import org.oddlama.vane.core.item.api.CustomItem;
 import org.oddlama.vane.core.item.api.InhibitBehavior;
 import org.oddlama.vane.core.module.Context;
 
-// TODO recipe book click event
 public class VanillaFunctionalityInhibitor extends Listener<Core> {
 
     public VanillaFunctionalityInhibitor(Context<Core> context) {
@@ -87,11 +86,41 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
             return;
         }
 
-        for (final var item : event.getInventory().getMatrix()) {
+        final var matrix = event.getInventory().getMatrix();
+        var has_inhibited = false;
+        for (final var item : matrix) {
             if (inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
-                event.getInventory().setResult(null);
-                return;
+                has_inhibited = true;
+                break;
             }
+        }
+
+        if (!has_inhibited) {
+            return;
+        }
+
+        event.getInventory().setResult(null);
+
+        // Return any inhibited custom items from the crafting grid back to the player's
+        // inventory, so they don't get stuck there (e.g. from a recipe book click).
+        final var viewers = event.getViewers();
+        if (viewers.isEmpty() || !(viewers.get(0) instanceof Player player)) {
+            return;
+        }
+
+        var matrix_changed = false;
+        for (var i = 0; i < matrix.length; i++) {
+            final var item = matrix[i];
+            if (inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
+                matrix[i] = null;
+                matrix_changed = true;
+                final var leftover = player.getInventory().addItem(item);
+                leftover.values().forEach(drop -> player.getWorld().dropItemNaturally(player.getLocation(), drop));
+            }
+        }
+
+        if (matrix_changed) {
+            event.getInventory().setMatrix(matrix);
         }
     }
 
