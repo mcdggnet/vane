@@ -102,6 +102,9 @@ public class Angel extends CustomEnchantment<Enchantments> {
 
         // Scale the delta dependent on the angle. Higher angle -> less effect
         final var vel = player.getVelocity();
+        if (vel.lengthSquared() == 0) {
+            return;
+        }
         final var delta = config_acceleration_percentage * (1.0 - dir.angle(vel) / Math.PI);
         final var factor = get_speed(level);
 
