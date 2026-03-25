@@ -123,6 +123,36 @@ public class ExistingItemConverter extends Listener<Core> {
             }
         }
 
+        // Un-stack any custom damageable items that may have stacked incorrectly.
+        // This fixes stacks that were created before max_stack_size=1 was enforced,
+        // and prevents setContents from silently discarding the excess items.
+        for (int i = 0; i < contents.length; i++) {
+            final var item = contents[i];
+            if (item == null || item.getAmount() <= 1) {
+                continue;
+            }
+            final var ci = get_module().item_registry().get(item);
+            if (ci == null || ci.durability() <= 0) {
+                continue;
+            }
+            final int excess = item.getAmount() - 1;
+            item.setAmount(1);
+            for (int e = 0; e < excess; e++) {
+                boolean placed = false;
+                for (int j = 0; j < contents.length; j++) {
+                    if (contents[j] == null || contents[j].isEmpty()) {
+                        contents[j] = item.clone();
+                        placed = true;
+                        break;
+                    }
+                }
+                if (!placed) {
+                    get_module().log.warning("Could not un-stack " + ci.key() + " — inventory full, item lost");
+                }
+            }
+            ++changed;
+        }
+
         if (changed > 0) {
             inventory.setContents(contents);
         }

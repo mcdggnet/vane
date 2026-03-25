@@ -173,6 +173,11 @@ public class DurabilityManager extends Listener<Core> {
         return item.editMeta(Damageable.class, meta -> {
             if (custom_item.durability() != 0) {
                 meta.setMaxDamage(custom_item.durability());
+                // Explicitly enforce max_stack_size = 1 for damageable custom items.
+                // Paper 1.21 tracks max_damage and max_stack_size as independent
+                // components, so setting max_damage alone does not guarantee
+                // max_stack_size = 1, which allows items to stack incorrectly.
+                meta.setMaxStackSize(1);
             } else {
                 meta.setMaxDamage((int) item.getType().getMaxDurability());
             }
