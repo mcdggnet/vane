@@ -36,13 +36,13 @@ public abstract class Sickle extends CustomItem<Trifles> {
                 namespaced_key("attack_damage"),
                 config_attack_damage,
                 AttributeModifier.Operation.ADD_NUMBER,
-                EquipmentSlotGroup.MAIN_HAND
+                EquipmentSlotGroup.MAINHAND
             );
             final var modifier_speed = new AttributeModifier(
                 namespaced_key("attack_speed"),
                 config_attack_speed,
                 AttributeModifier.Operation.ADD_NUMBER,
-                EquipmentSlotGroup.MAIN_HAND
+                EquipmentSlotGroup.MAINHAND
             );
             meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE, modifier_damage);
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, modifier_damage);
