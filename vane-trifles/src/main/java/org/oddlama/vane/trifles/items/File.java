@@ -385,33 +385,40 @@ public class File extends CustomItem<Trifles> {
             return;
         }
 
-        // Create a block break event for block to transmute and check if it gets canceled
         final var block = event.getClickedBlock();
+        final var data = block.getBlockData();
+        final var clicked_face = event.getBlockFace();
+
+        // Guard: only fire the permission-check BlockBreakEvent for blocks the File can
+        // actually modify. Firing it unconditionally lets third-party plugins (e.g. skill
+        // XP plugins) react to a synthetic break on arbitrary blocks, causing XP/drop bugs.
+        if (player.isSneaking()) {
+            if (!(data instanceof Stairs)) {
+                return;
+            }
+        } else {
+            if (!(data instanceof MultipleFacing) && !(data instanceof Wall) && !(data instanceof Stairs)) {
+                return;
+            }
+        }
+
+        // Create a block break event for block to transmute and check if it gets canceled
         final var break_event = new BlockBreakEvent(block, player);
         get_module().getServer().getPluginManager().callEvent(break_event);
         if (break_event.isCancelled()) {
             return;
         }
 
-        final var data = block.getBlockData();
-        final var clicked_face = event.getBlockFace();
-
         final Sound sound;
         if (player.isSneaking()) {
-            if (data instanceof Stairs) {
-                sound = change_stair_half((Stairs) data);
-            } else {
-                return;
-            }
+            sound = change_stair_half((Stairs) data);
         } else {
             if (data instanceof MultipleFacing) {
                 sound = change_multiple_facing(player, block, (MultipleFacing) data, clicked_face);
             } else if (data instanceof Wall) {
                 sound = change_wall(player, block, (Wall) data, clicked_face);
-            } else if (data instanceof Stairs) {
-                sound = change_stair_shape(player, block, (Stairs) data, clicked_face);
             } else {
-                return;
+                sound = change_stair_shape(player, block, (Stairs) data, clicked_face);
             }
         }
 
