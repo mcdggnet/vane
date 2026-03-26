@@ -31,6 +31,8 @@ import org.oddlama.vane.core.module.Context;
 
 public class VanillaFunctionalityInhibitor extends Listener<Core> {
 
+    private static final ThreadLocal<Boolean> setting_matrix = ThreadLocal.withInitial(() -> false);
+
     public VanillaFunctionalityInhibitor(Context<Core> context) {
         super(context);
     }
@@ -76,6 +78,10 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void on_prepare_item_craft(final PrepareItemCraftEvent event) {
+        if (setting_matrix.get()) {
+            return;
+        }
+
         final var recipe = event.getRecipe();
         if (!(recipe instanceof Keyed keyed)) {
             return;
@@ -120,7 +126,12 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
         }
 
         if (matrix_changed) {
-            event.getInventory().setMatrix(matrix);
+            setting_matrix.set(true);
+            try {
+                event.getInventory().setMatrix(matrix);
+            } finally {
+                setting_matrix.set(false);
+            }
         }
     }
 

@@ -27,7 +27,7 @@ subprojects {
 	apply(plugin = "java")
 
 	group = "org.oddlama.vane"
-	version = "1.21.2"
+	version = "1.21.3"
 
 	repositories {
 		mavenLocal()
