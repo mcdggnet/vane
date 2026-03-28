@@ -28,7 +28,6 @@ import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.oddlama.vane.annotation.item.VaneItem;
 import org.oddlama.vane.core.config.recipes.RecipeList;
@@ -368,7 +367,7 @@ public class File extends CustomItem<Trifles> {
         return Sound.UI_STONECUTTER_TAKE_RESULT;
     }
 
-    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void on_player_right_click(final PlayerInteractEvent event) {
         if (!event.hasBlock() || event.getAction() != Action.RIGHT_CLICK_BLOCK) {
             return;
@@ -389,9 +388,6 @@ public class File extends CustomItem<Trifles> {
         final var data = block.getBlockData();
         final var clicked_face = event.getBlockFace();
 
-        // Guard: only fire the permission-check BlockBreakEvent for blocks the File can
-        // actually modify. Firing it unconditionally lets third-party plugins (e.g. skill
-        // XP plugins) react to a synthetic break on arbitrary blocks, causing XP/drop bugs.
         if (player.isSneaking()) {
             if (!(data instanceof Stairs)) {
                 return;
@@ -400,13 +396,6 @@ public class File extends CustomItem<Trifles> {
             if (!(data instanceof MultipleFacing) && !(data instanceof Wall) && !(data instanceof Stairs)) {
                 return;
             }
-        }
-
-        // Create a block break event for block to transmute and check if it gets canceled
-        final var break_event = new BlockBreakEvent(block, player);
-        get_module().getServer().getPluginManager().callEvent(break_event);
-        if (break_event.isCancelled()) {
-            return;
         }
 
         final Sound sound;
