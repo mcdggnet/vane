@@ -19,6 +19,7 @@ public class MaterialUtil {
             case POTATOES:
             case BEETROOTS:
             case NETHER_WART:
+            case SEA_PICKLE:
                 return true;
         }
     }

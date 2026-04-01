@@ -14,6 +14,7 @@ import org.bukkit.SoundCategory;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.block.data.Ageable;
+import org.bukkit.block.data.type.SeaPickle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -205,6 +206,25 @@ public class PlayerUtil {
     }
 
     public static boolean harvest_plant(final Player player, final Block block) {
+        if (block.getType() == Material.SEA_PICKLE) {
+            if (!(block.getBlockData() instanceof SeaPickle sea_pickle)) {
+                return false;
+            }
+            if (sea_pickle.getPickles() != sea_pickle.getMaximumPickles()) {
+                return false;
+            }
+            final var break_event = new BlockBreakEvent(block, player);
+            Bukkit.getPluginManager().callEvent(break_event);
+            if (break_event.isCancelled()) {
+                return false;
+            }
+            final var drop_count = sea_pickle.getPickles() - sea_pickle.getMinimumPickles();
+            sea_pickle.setPickles(sea_pickle.getMinimumPickles());
+            block.setBlockData(sea_pickle);
+            drop_naturally(block, new ItemStack(Material.SEA_PICKLE, drop_count));
+            return true;
+        }
+
         ItemStack[] drops;
         switch (block.getType()) {
             default:
