@@ -214,6 +214,7 @@ public class PlayerUtil {
                 return false;
             }
             final var break_event = new BlockBreakEvent(block, player);
+            break_event.setDropItems(false);
             Bukkit.getPluginManager().callEvent(break_event);
             if (break_event.isCancelled()) {
                 return false;
@@ -256,8 +257,11 @@ public class PlayerUtil {
             return false;
         }
 
-        // Create a block break event for block to harvest and check if it gets canceled
+        // Create a block break event for block to harvest and check if it gets canceled.
+        // setDropItems(false) signals to other plugins (e.g. AuraSkills) that we handle
+        // drops ourselves, preventing bonus-drop abilities from firing on this synthetic event.
         final var break_event = new BlockBreakEvent(block, player);
+        break_event.setDropItems(false);
         Bukkit.getPluginManager().callEvent(break_event);
         if (break_event.isCancelled()) {
             return false;
