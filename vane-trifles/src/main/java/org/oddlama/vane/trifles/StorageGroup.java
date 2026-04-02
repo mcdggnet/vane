@@ -1,6 +1,7 @@
 package org.oddlama.vane.trifles;
 
 import net.kyori.adventure.text.Component;
+import org.bukkit.Material;
 import org.bukkit.Nameable;
 import org.bukkit.NamespacedKey;
 import org.bukkit.block.Container;
@@ -49,6 +50,30 @@ public class StorageGroup extends Listener<Trifles> {
 
     public StorageGroup(Context<Trifles> context) {
         super(context.group("storage", "Extensions to storage related stuff will be grouped under here."));
+    }
+
+    // Prevent placing storage items (pouches, backpacks, shulker boxes) into bundles.
+    // Existing items already stored this way are preserved, but new insertions are blocked.
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void on_prevent_storage_in_bundle(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) {
+            return;
+        }
+
+        final var clicked = event.getCurrentItem();
+        final var cursor = event.getCursor();
+
+        // Left-click with a storage item on cursor over a bundle → would insert into bundle
+        if (clicked != null && clicked.getType() == Material.BUNDLE && is_storage_item(cursor)) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Left-click with a bundle on cursor over a storage item → would insert storage item into bundle
+        if (cursor != null && cursor.getType() == Material.BUNDLE && is_storage_item(clicked)) {
+            event.setCancelled(true);
+            return;
+        }
     }
 
     @SuppressWarnings("deprecation")
