@@ -1,19 +1,26 @@
 package org.oddlama.vane.enchantments.enchantments;
 
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
+import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.loot.LootTables;
+import org.oddlama.vane.util.ItemUtil;
 import org.oddlama.vane.annotation.config.ConfigLong;
 import org.oddlama.vane.annotation.enchantment.Rarity;
 import org.oddlama.vane.annotation.enchantment.VaneEnchantment;
@@ -88,6 +95,64 @@ public class Soulbound extends CustomEnchantment<Enchantments> {
                 .in(LootTables.BASTION_TREASURE)
                 .add(1.0 / 15, 1, 1, on("vane_enchantments:enchanted_ancient_tome_of_the_gods"))
         );
+    }
+
+    // Fallback handler for when the ExactChoice recipe fails to match because the
+    // enchanted book has extra data components (e.g., repair_cost from fishing loot).
+    // The ExactChoice is kept so the recipe book correctly shows a Curse of Binding book.
+    @EventHandler(priority = EventPriority.LOW)
+    public void on_prepare_soulbound_craft(final PrepareItemCraftEvent event) {
+        // Only act when no recipe matched
+        if (event.getRecipe() != null) {
+            return;
+        }
+
+        final var matrix = event.getInventory().getMatrix();
+        if (matrix.length < 9) {
+            return;
+        }
+
+        // Verify the grid matches shape "cqc", "obe", "rgt"
+        // Row 0: c=0, q=1, c=2 | Row 1: o=3, b=4, e=5 | Row 2: r=6, g=7, t=8
+        if (!is_material(matrix[0], Material.IRON_CHAIN)       // c
+            || !is_material(matrix[1], Material.WRITABLE_BOOK) // q
+            || !is_material(matrix[2], Material.IRON_CHAIN)    // c
+            || !is_material(matrix[3], Material.BONE)          // o
+            || !is_custom_item(matrix[4], "vane_enchantments:ancient_tome_of_the_gods") // b
+            || !is_material(matrix[5], Material.ENDER_EYE)     // e
+            || !is_material(matrix[7], Material.GHAST_TEAR)    // g
+            || !is_material(matrix[8], Material.TOTEM_OF_UNDYING)) { // t
+            return;
+        }
+
+        // Check that slot 6 ('r') is an enchanted book with Curse of Binding
+        final var book = matrix[6];
+        if (book == null || book.getType() != Material.ENCHANTED_BOOK) {
+            return;
+        }
+
+        final var binding_curse = RegistryAccess.registryAccess()
+            .getRegistry(RegistryKey.ENCHANTMENT)
+            .get(NamespacedKey.minecraft("binding_curse"));
+        if (!(book.getItemMeta() instanceof EnchantmentStorageMeta meta)
+                || !meta.hasStoredEnchant(binding_curse)) {
+            return;
+        }
+
+        // All ingredients match — set the recipe result
+        event.getInventory().setResult(
+            ItemUtil.itemstack_from_string(on("vane_enchantments:enchanted_ancient_tome_of_the_gods")).getLeft()
+        );
+    }
+
+    private boolean is_material(ItemStack item, Material material) {
+        return item != null && item.getType() == material;
+    }
+
+    private boolean is_custom_item(ItemStack item, String custom_item_key) {
+        if (item == null) return false;
+        final var custom_item = get_module().core.item_registry().get(item);
+        return custom_item != null && custom_item.key().toString().equals(custom_item_key);
     }
 
     @Override
