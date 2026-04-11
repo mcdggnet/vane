@@ -11,16 +11,20 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.SoundCategory;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.inventory.PrepareAnvilEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.meta.EnchantmentStorageMeta;
 import org.oddlama.vane.annotation.config.ConfigInt;
 import org.oddlama.vane.core.Listener;
+import org.oddlama.vane.core.item.api.InhibitBehavior;
 import org.oddlama.vane.core.module.Context;
 import org.oddlama.vane.trifles.Trifles;
 import org.oddlama.vane.trifles.event.PlayerTeleportScrollEvent;
@@ -143,6 +147,41 @@ public class Scrolls extends Listener<Trifles> {
                 player.setCooldown(mat, cooldown_ticks);
             }
         }
+    }
+
+    // WARPED_FUNGUS_ON_A_STICK lacks minecraft:enchantable in vanilla 1.21+, so the
+    // anvil produces no result for scrolls. Handle unbreaking manually here.
+    @EventHandler(priority = EventPriority.LOW, ignoreCancelled = true)
+    public void on_prepare_anvil(final PrepareAnvilEvent event) {
+        final var a = event.getInventory().getFirstItem();
+        if (a == null) return;
+
+        final var custom_item = get_module().core.item_registry().get(a);
+        if (!(custom_item instanceof Scroll scroll) || !scroll.enabled()) return;
+        if (scroll.inhibitedBehaviors().contains(InhibitBehavior.NEW_ENCHANTS)) return;
+
+        final var b = event.getInventory().getSecondItem();
+        if (b == null || b.getType() != Material.ENCHANTED_BOOK) return;
+        if (!(b.getItemMeta() instanceof EnchantmentStorageMeta b_meta)) return;
+
+        final var book_level = b_meta.getStoredEnchants().get(Enchantment.UNBREAKING);
+        if (book_level == null) return;
+
+        final int existing_level = a.getEnchantmentLevel(Enchantment.UNBREAKING);
+        final int new_level;
+        if (existing_level == book_level) {
+            new_level = Math.min(existing_level + 1, Enchantment.UNBREAKING.getMaxLevel());
+        } else {
+            new_level = Math.max(existing_level, book_level);
+        }
+        if (new_level <= existing_level) return;
+
+        final var result = a.clone();
+        result.addUnsafeEnchantment(Enchantment.UNBREAKING, new_level);
+
+        final int prior_work = event.getInventory().getRepairCost();
+        event.getInventory().setRepairCost(prior_work + new_level);
+        event.setResult(result);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
