@@ -78,9 +78,9 @@ public class Angel extends CustomEnchantment<Enchantments> {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on_player_move(final PlayerMoveEvent event) {
-        // Check sneaking and flying
+        // Check sneaking and flying/swimming
         final var player = event.getPlayer();
-        if (!player.isSneaking() || !player.isGliding()) {
+        if (!player.isSneaking() || (!player.isGliding() && !player.isInWater())) {
             return;
         }
 
