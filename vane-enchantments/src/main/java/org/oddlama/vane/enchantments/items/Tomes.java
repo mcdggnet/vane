@@ -4,6 +4,7 @@ import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareGrindstoneEvent;
+import org.bukkit.event.inventory.PrepareItemCraftEvent;
 import org.bukkit.loot.LootTables;
 import org.oddlama.vane.annotation.item.VaneItem;
 import org.oddlama.vane.core.Listener;
@@ -282,6 +283,22 @@ public class Tomes extends ModuleGroup<Enchantments> {
 
         public GrindstoneListener(Context<Enchantments> context) {
             super(context);
+        }
+
+        @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+        public void on_prepare_item_craft(PrepareItemCraftEvent event) {
+            // Prevent enchanted tomes from being used as ingredients in any crafting recipe.
+            // Without this, enchanted tomes satisfy Material.ENCHANTED_BOOK ingredient slots
+            // (e.g. AncientTomeOfTheGods recipe), creating a path to dupe them.
+            for (final var item : event.getInventory().getMatrix()) {
+                final var custom_item = get_module().core.item_registry().get(item);
+                if (custom_item instanceof EnchantedAncientTome
+                        || custom_item instanceof EnchantedAncientTomeOfKnowledge
+                        || custom_item instanceof EnchantedAncientTomeOfTheGods) {
+                    event.getInventory().setResult(null);
+                    return;
+                }
+            }
         }
 
         @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
