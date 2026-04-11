@@ -1,5 +1,6 @@
 package org.oddlama.vane.enchantments.items;
 
+import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -287,14 +288,28 @@ public class Tomes extends ModuleGroup<Enchantments> {
 
         @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
         public void on_prepare_item_craft(PrepareItemCraftEvent event) {
-            // Prevent enchanted tomes from being used as ingredients in any crafting recipe.
-            // Without this, enchanted tomes satisfy Material.ENCHANTED_BOOK ingredient slots
-            // (e.g. AncientTomeOfTheGods recipe), creating a path to dupe them.
+            final var recipe = event.getRecipe();
+            final boolean is_vanilla = recipe instanceof Keyed keyed
+                && keyed.getKey().getNamespace().equals("minecraft");
+
             for (final var item : event.getInventory().getMatrix()) {
                 final var custom_item = get_module().core.item_registry().get(item);
+                // Enchanted tome variants must never appear as crafting ingredients in any
+                // recipe — they satisfy Material.ENCHANTED_BOOK slots (e.g. the
+                // AncientTomeOfTheGods recipe) which would let players dupe them.
                 if (custom_item instanceof EnchantedAncientTome
                         || custom_item instanceof EnchantedAncientTomeOfKnowledge
                         || custom_item instanceof EnchantedAncientTomeOfTheGods) {
+                    event.getInventory().setResult(null);
+                    return;
+                }
+                // Plain tome variants must not satisfy Material.BOOK slots in vanilla
+                // recipes (e.g. book_and_quill). They are valid ingredients only in
+                // vane-namespaced recipes, so restrict the block to vanilla ones.
+                if (is_vanilla
+                        && (custom_item instanceof AncientTome
+                            || custom_item instanceof AncientTomeOfKnowledge
+                            || custom_item instanceof AncientTomeOfTheGods)) {
                     event.getInventory().setResult(null);
                     return;
                 }
