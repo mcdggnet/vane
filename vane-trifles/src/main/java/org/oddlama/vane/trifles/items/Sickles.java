@@ -26,7 +26,7 @@ import org.oddlama.vane.util.BlockUtil;
 
 public class Sickles extends Listener<Trifles> {
 
-    @VaneItem(name = "wooden_sickle", base = Material.WOODEN_HOE, model_data = 0x760004, version = 1)
+    @VaneItem(name = "wooden_sickle", base = Material.WOODEN_HOE, model_data = 0x760004, version = 2)
     public static class WoodenSickle extends Sickle {
 
         public WoodenSickle(Context<Trifles> context) {
@@ -57,7 +57,7 @@ public class Sickles extends Listener<Trifles> {
         }
     }
 
-    @VaneItem(name = "stone_sickle", base = Material.STONE_HOE, model_data = 0x760005, version = 1)
+    @VaneItem(name = "stone_sickle", base = Material.STONE_HOE, model_data = 0x760005, version = 2)
     public static class StoneSickle extends Sickle {
 
         public StoneSickle(Context<Trifles> context) {
@@ -88,7 +88,7 @@ public class Sickles extends Listener<Trifles> {
         }
     }
 
-    @VaneItem(name = "iron_sickle", base = Material.IRON_HOE, model_data = 0x760006, version = 1)
+    @VaneItem(name = "iron_sickle", base = Material.IRON_HOE, model_data = 0x760006, version = 2)
     public static class IronSickle extends Sickle {
 
         public IronSickle(Context<Trifles> context) {
@@ -119,7 +119,7 @@ public class Sickles extends Listener<Trifles> {
         }
     }
 
-    @VaneItem(name = "golden_sickle", base = Material.GOLDEN_HOE, model_data = 0x760007, version = 1)
+    @VaneItem(name = "golden_sickle", base = Material.GOLDEN_HOE, model_data = 0x760007, version = 2)
     public static class GoldenSickle extends Sickle {
 
         public GoldenSickle(Context<Trifles> context) {
@@ -150,7 +150,7 @@ public class Sickles extends Listener<Trifles> {
         }
     }
 
-    @VaneItem(name = "diamond_sickle", base = Material.DIAMOND_HOE, model_data = 0x760008, version = 1)
+    @VaneItem(name = "diamond_sickle", base = Material.DIAMOND_HOE, model_data = 0x760008, version = 2)
     public static class DiamondSickle extends Sickle {
 
         public DiamondSickle(Context<Trifles> context) {
@@ -181,7 +181,7 @@ public class Sickles extends Listener<Trifles> {
         }
     }
 
-    @VaneItem(name = "netherite_sickle", base = Material.NETHERITE_HOE, model_data = 0x760009, version = 1)
+    @VaneItem(name = "netherite_sickle", base = Material.NETHERITE_HOE, model_data = 0x760009, version = 2)
     public static class NetheriteSickle extends Sickle {
 
         public NetheriteSickle(Context<Trifles> context) {

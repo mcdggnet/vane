@@ -44,9 +44,11 @@ public abstract class Sickle extends CustomItem<Trifles> {
                 AttributeModifier.Operation.ADD_NUMBER,
                 EquipmentSlotGroup.MAINHAND
             );
-            meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE, modifier_damage);
+            // Remove all modifiers for these attributes so that old items carrying
+            // the pre-fix EquipmentSlotGroup.HAND modifier are cleaned up correctly.
+            meta.removeAttributeModifier(Attribute.ATTACK_DAMAGE);
             meta.addAttributeModifier(Attribute.ATTACK_DAMAGE, modifier_damage);
-            meta.removeAttributeModifier(Attribute.ATTACK_SPEED, modifier_speed);
+            meta.removeAttributeModifier(Attribute.ATTACK_SPEED);
             meta.addAttributeModifier(Attribute.ATTACK_SPEED, modifier_speed);
         });
         return item_stack;
