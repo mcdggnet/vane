@@ -1,11 +1,13 @@
 package org.oddlama.vane.enchantments.items;
 
+import io.papermc.paper.event.player.PlayerPurchaseEvent;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.inventory.PrepareGrindstoneEvent;
 import org.bukkit.event.inventory.PrepareItemCraftEvent;
+import org.bukkit.inventory.MerchantInventory;
 import org.bukkit.loot.LootTables;
 import org.oddlama.vane.annotation.item.VaneItem;
 import org.oddlama.vane.core.Listener;
@@ -311,6 +313,25 @@ public class Tomes extends ModuleGroup<Enchantments> {
                             || custom_item instanceof AncientTomeOfKnowledge
                             || custom_item instanceof AncientTomeOfTheGods)) {
                     event.getInventory().setResult(null);
+                    return;
+                }
+            }
+        }
+
+        @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+        public void on_player_purchase(final PlayerPurchaseEvent event) {
+            // Prevent any tome variant from being used as a trade ingredient with villagers.
+            final var inventory = event.getPlayer().getOpenInventory().getTopInventory();
+            if (!(inventory instanceof MerchantInventory merchant_inv)) return;
+            for (int i = 0; i < 2; i++) {
+                final var custom_item = get_module().core.item_registry().get(merchant_inv.getItem(i));
+                if (custom_item instanceof AncientTome
+                        || custom_item instanceof AncientTomeOfKnowledge
+                        || custom_item instanceof AncientTomeOfTheGods
+                        || custom_item instanceof EnchantedAncientTome
+                        || custom_item instanceof EnchantedAncientTomeOfKnowledge
+                        || custom_item instanceof EnchantedAncientTomeOfTheGods) {
+                    event.setCancelled(true);
                     return;
                 }
             }
