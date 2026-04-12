@@ -1,8 +1,10 @@
 package org.oddlama.vane.enchantments.enchantments;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Item;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.inventory.ItemFlag;
 import org.bukkit.loot.LootTables;
@@ -48,6 +50,30 @@ public class Unbreakable extends CustomEnchantment<Enchantments> {
                 .in(LootTables.BASTION_TREASURE)
                 .add(1.0 / 30, 1, 1, on("vane_enchantments:enchanted_ancient_tome_of_the_gods"))
         );
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void on_item_entity_burn(final EntityDamageEvent event) {
+        // Only fire/lava damage causes
+        final var cause = event.getCause();
+        if (cause != EntityDamageEvent.DamageCause.FIRE
+            && cause != EntityDamageEvent.DamageCause.FIRE_TICK
+            && cause != EntityDamageEvent.DamageCause.LAVA
+            && cause != EntityDamageEvent.DamageCause.HOT_FLOOR) {
+            return;
+        }
+
+        // Only dropped item entities
+        if (!(event.getEntity() instanceof Item itemEntity)) {
+            return;
+        }
+
+        // Cancel if the item stack has the unbreakable enchantment
+        if (itemEntity.getItemStack().getEnchantmentLevel(this.bukkit()) == 0) {
+            return;
+        }
+
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
