@@ -416,6 +416,10 @@ public class File extends CustomItem<Trifles> {
             return;
         }
 
+        // Prevent vanilla from using the item in hand (e.g. placing an offhand block)
+        event.setUseItemInHand(Event.Result.DENY);
+        event.setUseInteractedBlock(Event.Result.DENY);
+
         // Update block data, and don't trigger physics! (We do not want to affect surrounding
         // blocks!)
         block.setBlockData(data, false);

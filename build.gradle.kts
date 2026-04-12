@@ -68,6 +68,11 @@ configure(subprojects.filter {
     }
 	dependencies {
 		paperweight.paperDevBundle(rootProject.libs.versions.paper)
+		// Workaround: the Paper dev-bundle lists adventure-text-serializer-ansi without a
+		// version in its Gradle module metadata. adventure-bom is scoped to paper-api's
+		// sub-graph and doesn't propagate to sibling dev-bundle deps. Importing the BOM
+		// explicitly here gives Gradle the version it needs.
+		compileOnly(platform(rootProject.libs.adventureBom))
 	}
 }
 

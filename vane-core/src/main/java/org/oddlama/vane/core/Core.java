@@ -229,19 +229,42 @@ public class Core extends Module<Core> {
             final var json = read_json_from_url("https://api.github.com/repos/oddlama/vane/releases/latest");
             latest_version = json.getString("tag_name");
             if (latest_version != null && !latest_version.equals(current_version)) {
-                log.warning(
-                    "A newer version of vane is available online! (current=" +
-                    current_version +
-                    ", new=" +
-                    latest_version +
-                    ")"
-                );
-                log.warning("Please update as soon as possible to get the latest features and fixes.");
-                log.warning("Get the latest release here: https://github.com/oddlama/vane/releases/latest");
+                int cmp = compare_versions(current_version, latest_version);
+                if (cmp > 0) {
+                    log.info(
+                        "[vane-core] Your version " + current_version + " is ahead of the latest release " + latest_version + "."
+                    );
+                } else {
+                    log.warning(
+                        "A newer version of vane is available online! (current=" +
+                        current_version +
+                        ", new=" +
+                        latest_version +
+                        ")"
+                    );
+                    log.warning("Please update as soon as possible to get the latest features and fixes.");
+                    log.warning("Get the latest release here: https://github.com/oddlama/vane/releases/latest");
+                }
             }
         } catch (IOException | JSONException | URISyntaxException e) {
             log.warning("Could not check for updates: " + e);
         }
+    }
+
+    /**
+     * Compares two version strings of the form "v1.2.3" (or "1.2.3").
+     * Returns positive if a > b, negative if a < b, 0 if equal.
+     */
+    private int compare_versions(String a, String b) {
+        String[] partsA = a.replaceFirst("^v", "").split("\\.");
+        String[] partsB = b.replaceFirst("^v", "").split("\\.");
+        int len = Math.max(partsA.length, partsB.length);
+        for (int i = 0; i < len; i++) {
+            int numA = i < partsA.length ? Integer.parseInt(partsA[i]) : 0;
+            int numB = i < partsB.length ? Integer.parseInt(partsB[i]) : 0;
+            if (numA != numB) return numA - numB;
+        }
+        return 0;
     }
 
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
@@ -250,8 +273,8 @@ public class Core extends Module<Core> {
             return;
         }
 
-        // Send an update message if a new version is available and player is OP.
-        if (latest_version != null && !latest_version.equals(current_version) && event.getPlayer().isOp()) {
+        // Send an update message if the remote version is newer and player is OP.
+        if (latest_version != null && compare_versions(latest_version, current_version) > 0 && event.getPlayer().isOp()) {
             // This message is intentionally not translated to ensure it will
             // be displayed correctly and so that everyone understands it.
             event
