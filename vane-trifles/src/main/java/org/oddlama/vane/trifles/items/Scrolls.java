@@ -95,13 +95,14 @@ public class Scrolls extends Listener<Trifles> {
                 break;
         }
 
-        final var to_location = scroll.teleport_location(item, player, true);
-        if (to_location == null) {
+        // Check cooldown before calling teleport_location to avoid side-effects (e.g.
+        // DeathScroll consuming its stored location) when the cooldown would block the teleport.
+        if (player.getCooldown(scroll.baseMaterial()) > 0) {
             return;
         }
 
-        // Check cooldown
-        if (player.getCooldown(scroll.baseMaterial()) > 0) {
+        final var to_location = scroll.teleport_location(item, player, true);
+        if (to_location == null) {
             return;
         }
 
@@ -124,8 +125,11 @@ public class Scrolls extends Listener<Trifles> {
             return false;
         }
 
-        // Teleport
-        player.teleport(to, PlayerTeleportEvent.TeleportCause.PLUGIN);
+        // Teleport - if another plugin cancels the PlayerTeleportEvent the scroll shouldn't
+        // consume a charge or set a cooldown, so we propagate the failure back to the caller.
+        if (!player.teleport(to, PlayerTeleportEvent.TeleportCause.PLUGIN)) {
+            return false;
+        }
 
         // Play sounds
         from.getWorld().playSound(from, Sound.ITEM_CHORUS_FRUIT_TELEPORT, SoundCategory.PLAYERS, 1.0f, 1.1f);

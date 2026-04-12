@@ -2,6 +2,7 @@ package org.oddlama.vane.core.item;
 
 import static org.oddlama.vane.util.MaterialUtil.is_tillable;
 
+import java.util.Objects;
 import org.bukkit.Keyed;
 import org.bukkit.Material;
 import org.bukkit.craftbukkit.inventory.CraftItemStack;
@@ -22,6 +23,11 @@ import org.bukkit.event.inventory.PrepareSmithingEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemMendEvent;
 import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.Recipe;
+import org.bukkit.inventory.RecipeChoice;
+import org.bukkit.inventory.ShapedRecipe;
+import org.bukkit.inventory.ShapelessRecipe;
 import org.bukkit.inventory.SmithingRecipe;
 import org.oddlama.vane.core.Core;
 import org.oddlama.vane.core.Listener;
@@ -76,6 +82,30 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
         }
     }
 
+    /**
+     * Returns true if the given item is an intended ExactChoice ingredient of the recipe.
+     * Used to allow custom items that are explicitly listed as recipe ingredients (e.g. papyrus
+     * scrolls in scroll crafting recipes), while still blocking ones that accidentally match via a
+     * MaterialChoice on their base material (e.g. EmptyXpBottle matching as GLASS_BOTTLE).
+     */
+    private boolean is_intended_ingredient(final Recipe recipe, final ItemStack item) {
+        if (recipe instanceof ShapelessRecipe shapeless) {
+            return shapeless
+                .getChoiceList()
+                .stream()
+                .anyMatch(choice -> choice instanceof RecipeChoice.ExactChoice exact && exact.test(item));
+        }
+        if (recipe instanceof ShapedRecipe shaped) {
+            return shaped
+                .getChoiceMap()
+                .values()
+                .stream()
+                .filter(Objects::nonNull)
+                .anyMatch(choice -> choice instanceof RecipeChoice.ExactChoice exact && exact.test(item));
+        }
+        return false;
+    }
+
     @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
     public void on_prepare_item_craft(final PrepareItemCraftEvent event) {
         if (setting_matrix.get()) {
@@ -87,18 +117,26 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
             return;
         }
 
-        // Only consider canceling minecraft's recipes
-        if (!keyed.getKey().getNamespace().equals("minecraft")) {
-            return;
-        }
+        // For minecraft: recipes every inhibited custom item in the matrix blocks the craft.
+        // For custom (vane) recipes we only block inhibited custom items that ended up there
+        // via a MaterialChoice on their base material — i.e. NOT intended as an ingredient.
+        // Example: EmptyXpBottle (base: GLASS_BOTTLE) accidentally matching the GLASS_BOTTLE
+        // MaterialChoice slot in its own recipe during bulk shift-click crafting.
+        // Inhibited items that ARE explicit ExactChoice ingredients (e.g. PapyrusScroll in
+        // HomeScroll) must still be allowed through.
+        final boolean is_minecraft_recipe = keyed.getKey().getNamespace().equals("minecraft");
 
         final var matrix = event.getInventory().getMatrix();
         var has_inhibited = false;
         for (final var item : matrix) {
-            if (inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
-                has_inhibited = true;
-                break;
+            if (!inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
+                continue;
             }
+            if (!is_minecraft_recipe && is_intended_ingredient(recipe, item)) {
+                continue;
+            }
+            has_inhibited = true;
+            break;
         }
 
         if (!has_inhibited) {
@@ -117,12 +155,16 @@ public class VanillaFunctionalityInhibitor extends Listener<Core> {
         var matrix_changed = false;
         for (var i = 0; i < matrix.length; i++) {
             final var item = matrix[i];
-            if (inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
-                matrix[i] = null;
-                matrix_changed = true;
-                final var leftover = player.getInventory().addItem(item);
-                leftover.values().forEach(drop -> player.getWorld().dropItemNaturally(player.getLocation(), drop));
+            if (!inhibit(get_module().item_registry().get(item), InhibitBehavior.USE_IN_VANILLA_RECIPE)) {
+                continue;
             }
+            if (!is_minecraft_recipe && is_intended_ingredient(recipe, item)) {
+                continue;
+            }
+            matrix[i] = null;
+            matrix_changed = true;
+            final var leftover = player.getInventory().addItem(item);
+            leftover.values().forEach(drop -> player.getWorld().dropItemNaturally(player.getLocation(), drop));
         }
 
         if (matrix_changed) {
