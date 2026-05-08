@@ -12,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.entity.EntityTeleportEvent;
+import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.util.Vector;
 import org.oddlama.vane.core.Listener;
@@ -206,10 +207,22 @@ public class PortalTeleporter extends Listener<Portals> {
                 entities_portalling.put(entity_id, event.getFrom().clone());
             } else if (!get_module().portal_area_materials.contains(block.getType())) {
                 // At least 2 blocks away and outside of portal area → finish portalling.
-                if (loc.getWorld() == event.getFrom().getWorld() && event.getFrom().distance(loc) > 2.0) {
+                // A different world also counts as "moved away": if the entity has crossed
+                // worlds via any means (vanilla portal, /tp, plugin), keeping the stale entry
+                // would block all future PlayerPortalEvents (including end portals).
+                if (loc.getWorld() != event.getFrom().getWorld() || event.getFrom().distance(loc) > 2.0) {
                     entities_portalling.remove(entity_id);
                 }
             }
         }
+    }
+
+    // Silent world transitions (vanilla portals, respawn, /tp, plugin teleports) do not
+    // produce an EntityMoveEvent because is_movement requires the same world. Without this
+    // handler a player who crossed worlds while still tracked in entities_portalling would
+    // remain stuck and have all future PlayerPortalEvents cancelled.
+    @EventHandler(priority = EventPriority.MONITOR)
+    public void on_player_changed_world(final PlayerChangedWorldEvent event) {
+        entities_portalling.remove(event.getPlayer().getUniqueId());
     }
 }
